@@ -99,10 +99,10 @@ sap.ui.define([
 			}),
 			customHeader: new sap.m.Bar({
 				contentMiddle: [
-						new sap.m.Text({
-							text: "Error"
-						})
-					]
+					new sap.m.Text({
+						text: "Error"
+					})
+				]
 			}),
 			contentHeight: "300px",
 			contentWidth: "500px",
@@ -119,7 +119,7 @@ sap.ui.define([
 	 */
 	Validator.prototype._validate = function (oControl) {
 		var i,
-			isValidatedControl = true,
+			isValidatedControl = false,
 			isValid = true;
 
 		// only validate controls and elements which have a 'visible' property
@@ -135,22 +135,27 @@ sap.ui.define([
 		if (oControl.getRequired && oControl.getRequired() === true &&
 			oControl.getEnabled && oControl.getEnabled() === true) { // Control required
 			isValid = this._validateRequired(oControl);
+			isValidatedControl = true;
+		}
 
-		} else if ((i = this._hasType(oControl)) !== -1 &&
+		if (isValid === true &&
+			(i = this._hasType(oControl)) !== -1 &&
 			oControl.getEnabled && oControl.getEnabled() === true) { // Control constraints
 			isValid = this._validateConstraint(oControl, i);
+			isValidatedControl = true;
+		}
 
-		} else if (oControl.getValueState &&
+		if (isValid === true &&
+			oControl.getValueState &&
 			oControl.getValueState() === ValueState.Error) { // Control custom validation
 			isValid = false;
 			this._setValueState(oControl, ValueState.Error, "Wrong input");
-
-		} else {
-			isValidatedControl = false;
+			isValidatedControl = true;
 		}
 
 		if (!isValid) {
 			this._isValid = false;
+			this._attachClearValue(oControl);
 			this._addMessage(oControl);
 		}
 
@@ -265,6 +270,26 @@ sap.ui.define([
 	};
 
 	/**
+	 * Add event listner to clear value state after change
+	 * @memberof nl.qualiture.plunk.demo.utils.Validator
+	 *
+	 * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl - The control or element to be validated.
+	 */
+	Validator.prototype._attachClearValue = function (oControl) {
+		if (oControl.attachLiveChange) {
+			oControl.attachEventOnce("liveChange", function () {
+				if (this.getValueState() === "Error")
+					this.setValueState("None");
+			});
+		} else if (oControl.attachChange) {
+			oControl.attachEventOnce("change", function () {
+				if (this.getValueState() === "Error")
+					this.setValueState("None");
+			});
+		}
+	};
+
+	/**
 	 * Check if the control property has a data type, then returns the index of the property to validate
 	 * @memberof nl.qualiture.plunk.demo.utils.Validator
 	 *
@@ -290,7 +315,7 @@ sap.ui.define([
 	 */
 	Validator.prototype._setValueState = function (oControl, eValueState, sText) {
 		oControl.setValueState(eValueState);
-		if (oControl.getValueStateText && !oControl.getValueStateText())
+		if (oControl.getValueStateText) // && !oControl.getValueStateText())
 			oControl.setValueStateText(sText);
 	};
 
