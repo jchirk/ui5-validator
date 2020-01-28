@@ -252,7 +252,10 @@ sap.ui.define([
 		case "sap.m.CheckBox":
 		case "sap.m.Input":
 		case "sap.m.Select":
-			sLabel = oControl.getParent().getLabel().getText();
+			if (oControl.getParent().getLabel && oControl.getParent().getLabel())
+				sLabel = oControl.getParent().getLabel().getText();
+			else
+				sLabel = oControl.getName();
 			break;
 		}
 
